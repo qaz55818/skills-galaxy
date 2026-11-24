@@ -1,0 +1,8 @@
+# 每台電腦重新產生的資料，內含本機路徑與 MCP 清單，不進版控
+skills-data.js
+mcp-state.json
+
+node_modules/
+.DS_Store
+Thumbs.db
+*.log

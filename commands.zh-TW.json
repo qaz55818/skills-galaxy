@@ -1,0 +1,321 @@
+{
+  "beatreel": {
+    "bash setup.sh": "第一次使用前執行一次，安裝所需環境",
+    "./beatreel board path/script.json": "產生語音與分鏡總覽圖（每個段落取中間一格），用來預覽",
+    "./beatreel make path/script.json": "把腳本算成影片，輸出在腳本旁的 <名稱>.mp4",
+    "./beatreel say \"Postgres on macOS\"": "試聽一句話會怎麼唸，並列出發音是猜測的字詞",
+    "./beatreel icons rocket": "查詢可用的圖示名稱，用在腳本的 \"icon\": \"set:name\""
+  },
+  "blcaptain-style-skill": {
+    "node bin/blcaptain-style.mjs build <brief.json> --out <deck>": "依 brief.json 建立圖文卡片組的版面",
+    "node bin/blcaptain-style.mjs image-fetch <urls.json> --out <deck>/assets --brief <brief.json>": "封面需要圖片時先抓圖並回填到 brief，再執行 build",
+    "node bin/blcaptain-style.mjs render <deck>": "把卡片組算成最終圖檔"
+  },
+  "create-game-assets": {
+    "python scripts/asset_report.py assets/player-idle.png --expect-size 64x64 --require-alpha --max-colors 48 --json": "檢查單張素材：尺寸、是否有透明通道、顏色數，結果輸出為 JSON",
+    "python scripts/build_preview_sheet.py output/player/*.png --out output/player-preview.png --columns 4 --cell-size 192": "把多張圖拼成一張預覽總表，方便檢查風格是否一致"
+  },
+  "create-partner": {
+    "mkdir -p partners/{slug}": "建立這位伴侶的資料夾",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/version_manager.py --action save --slug {slug} --message \"Initial creation\"": "儲存目前版本並附上版本說明",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/state_engine.py --profile partners/{slug}/profile.json --signals \"[extracted_signals_json]\"": "依個人檔案與擷取到的訊號推斷目前的關係狀態",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/policy_selector.py --attachment [attachment_type] --state [S_t] --conflict [conflict_type_if_any]": "依依戀類型、關係狀態與衝突類型選出介入策略",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/counterfactual_engine.py --attachment [attachment_type] --emotional_state [E_t] --state [S_t] --responses \"[candidates_json]\"": "模擬多種回應方式會帶來的結果並比較",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/scenario_advisor.py --profile partners/{slug}/profile.json --scenario \"[scenario_type]\" --context \"[user_description]\"": "針對指定生活情境給出建議與話術",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/scenario_advisor.py --list": "列出所有支援的生活情境",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/conflict_resolver.py --profile partners/{slug}/profile.json --conflict \"[conflict_description]\"": "針對一次衝突給出化解建議",
+    "ls ./partners/": "列出已建立的伴侶資料",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/version_manager.py --action list --slug {slug}": "列出某位伴侶資料的所有版本",
+    "python3 ${CLAUDE_SKILL_DIR}/tools/version_manager.py --action rollback --slug {slug} --version {version_id}": "把資料還原到指定版本",
+    "rm -rf partners/{slug}": "刪除某位伴侶的全部資料（無法復原）"
+  },
+  "ebitengine-game": {
+    "python3 \"$skill_dir/scripts/new_game.py\" --out mygame --module example.com/mygame --title \"My Game\"": "用範本建立新的遊戲專案",
+    "go mod tidy": "整理並下載 Go 相依套件",
+    "go test ./world/...": "執行不需要顯示卡的遊戲規則測試",
+    "go vet ./...": "靜態檢查 Go 程式碼",
+    "python3 \"$skill_dir/scripts/check_ebitengine.py\" .": "檢查專案是否符合 Ebitengine 的常見慣例",
+    "go build -buildvcs=false -o game .": "編譯出遊戲執行檔",
+    "printf 'pcm.!default { type null }\\n' > \"$audio_config\"": "建立暫時的空音訊設定，讓沒有音效卡的環境也能執行",
+    "rm \"$audio_config\"": "刪除暫時的音訊設定檔"
+  },
+  "godot-export": {
+    "mkdir -p build/windows build/linux build/web": "先建立輸出資料夾（Godot 不會自動建立）",
+    "godot --headless --export-release \"Windows Desktop\" build/windows/game.exe": "匯出 Windows 正式版",
+    "godot --headless --export-release \"Linux\" build/linux/game.x86_64": "匯出 Linux 正式版",
+    "godot --headless --export-release \"Web\" build/web/index.html": "匯出網頁版",
+    "godot --headless --export-debug \"Windows Desktop\" build/windows/game_debug.exe": "匯出 Windows 除錯版",
+    "godot --headless --export-pack \"Linux\" build/game.pck": "只匯出資源包 .pck（副檔名改 .zip 則輸出 ZIP）",
+    "godot --headless --export-patch \"Linux\" build/patch1.pck --patches build/game.pck": "匯出只含差異內容的更新包"
+  },
+  "graphify": {
+    "mkdir -p graphify-out": "建立輸出資料夾 graphify-out",
+    "graphify export obsidian": "把知識圖譜匯出成 Obsidian 筆記庫",
+    "graphify export html": "把知識圖譜匯出成 HTML（節點超過 5000 個時自動改用社群檢視）",
+    "rm -f graphify-out/.graphify_detect.json graphify-out/.graphify_extract.json graphify-out/.graphify_ast.json graphify-out/.graphify_semantic.json graphify-out/.graphify_analysis.json graphify-out/.graphify_partial.txt": "清除建圖過程留下的暫存檔",
+    "find graphify-out -maxdepth 1 -name '.graphify_chunk_*.json' -delete 2>/dev/null": "刪除分塊擷取的暫存檔",
+    "rm -f graphify-out/.needs_update 2>/dev/null || true": "移除「需要更新」的標記",
+    "graphify query \"<question>\"": "用自然語言向知識圖譜提問"
+  },
+  "hyperframes-registry": {
+    "npx hyperframes catalog --query \"<what the beat should do, in English>\" --json": "用英文描述想要的效果，搜尋可用的元件與範例",
+    "npx hyperframes add <name> --json": "安裝指定元件，並列出寫入的檔案與掛載方式"
+  },
+  "itch-publish": {
+    "butler push ./build/windows leafy/my-game:windows --userversion 1.2.0": "上傳 Windows 版到對應頻道並標上版本號",
+    "butler push ./build/mac leafy/my-game:osx --userversion 1.2.0": "上傳 macOS 版",
+    "butler push ./build/linux leafy/my-game:linux --userversion 1.2.0": "上傳 Linux 版",
+    "butler push ./web leafy/my-game:html --userversion 1.2.0": "上傳網頁版（頁面類型需設為 HTML）",
+    "butler push ./build leafy/my-game:windows --ignore '*.pdb' --ignore '*.dSYM'": "上傳時排除指定檔案（--ignore 可重複使用）",
+    "butler push ./build leafy/my-game:windows-beta --hidden": "上傳到隱藏頻道（只在建立新頻道時有效）",
+    "butler push ./build leafy/my-game:windows --if-changed": "內容沒有變更就略過上傳，適合 CI 重跑",
+    "butler status leafy/my-game": "查看這款遊戲的頻道、組建與版本"
+  },
+  "love2d-core": {
+    "love --version": "確認已安裝 LÖVE 並查看版本",
+    "timeout 30 love . --frames 120 --shot frame.png; echo \"exit=$?\"": "執行 120 個影格後截圖並結束，用來自動檢查遊戲能否啟動"
+  },
+  "media-use": {
+    "npx hyperframes media-use resolve --type <type> --intent \"<what you need>\" --project <dir>": "依類型與需求描述，為專案尋找或產生媒體素材"
+  },
+  "roblox-datastores": {
+    "rg -n \":(GetAsync|SetAsync|UpdateAsync|IncrementAsync|RemoveAsync|GetSortedAsync)\\(\" src": "列出所有 DataStore 呼叫，逐一確認是否包在 pcall 裡",
+    "rg -n \"BindToClose\" src": "確認至少有一個在伺服器關閉時儲存所有玩家資料的處理",
+    "rg -n \":SetAsync\\(\" src": "找出所有 SetAsync，寫入玩家資料的每一處都要有正當理由"
+  },
+  "roblox-luau": {
+    "selene .": "用 selene 檢查 Luau 程式碼（selene.toml 需設定 std = \"roblox\"）",
+    "rojo sourcemap default.project.json --output sourcemap.json": "用 Rojo 產生 sourcemap 供型別檢查使用",
+    "luau-lsp analyze --sourcemap=sourcemap.json src": "用 luau-lsp 做型別分析"
+  },
+  "steam-publish": {
+    "python scripts/check_steam_build.py tools/ContentBuilder/scripts/app_build_1000.vdf": "上傳前檢查 Steam 組建設定檔",
+    "python scripts/check_steam_build.py app_build_1000.vdf --json --strict": "以嚴格模式檢查並輸出 JSON，適合當 CI 關卡"
+  },
+  "brand": {
+    "node scripts/inject-brand-context.cjs": "把品牌設定注入目前的工作脈絡",
+    "node scripts/inject-brand-context.cjs --json": "以 JSON 輸出品牌設定",
+    "node scripts/validate-asset.cjs <asset-path>": "檢查素材是否符合品牌規範",
+    "node scripts/extract-colors.cjs --palette": "列出品牌色票",
+    "node scripts/extract-colors.cjs <image-path>": "從圖片擷取主要顏色",
+    "node scripts/sync-brand-to-tokens.cjs": "把品牌設定同步成設計 token",
+    "node scripts/inject-brand-context.cjs --json | head -20": "查看前 20 行 JSON，確認同步結果"
+  },
+  "design": {
+    "python3 scripts/logo/search.py \"tech startup modern\" --design-brief -p \"BrandName\"": "依關鍵字產生 Logo 設計簡報",
+    "python3 scripts/logo/search.py \"minimalist clean\" --domain style": "搜尋 Logo 風格",
+    "python3 scripts/logo/search.py \"tech professional\" --domain color": "搜尋配色",
+    "python3 scripts/logo/search.py \"healthcare medical\" --domain industry": "搜尋產業慣用的設計方向",
+    "python3 scripts/logo/generate.py --brand \"TechFlow\" --style minimalist --industry tech": "依品牌名稱、風格與產業用 AI 產生 Logo",
+    "python3 scripts/logo/generate.py --prompt \"coffee shop vintage badge\" --style vintage": "依文字描述產生 Logo",
+    "python3 scripts/logo/generate.py --brand \"TechFlow\" --provider atlas": "改用 atlas 服務產生 Logo",
+    "python3 scripts/logo/generate.py --brand \"TechFlow\" --provider muapi": "改用 muapi 服務產生 Logo",
+    "python3 scripts/logo/generate.py --brand \"TechFlow\" --provider muapi --muapi-model nano-banana-pro": "用 muapi 並指定模型產生 Logo",
+    "python3 scripts/cip/search.py \"tech startup\" --cip-brief -b \"BrandName\"": "產生企業識別（CIP）設計簡報",
+    "python3 scripts/cip/search.py \"business card letterhead\" --domain deliverable": "搜尋識別應用項目（名片、信紙等）",
+    "python3 scripts/cip/search.py \"luxury premium elegant\" --domain style": "搜尋識別風格",
+    "python3 scripts/cip/search.py \"hospitality hotel\" --domain industry": "搜尋產業慣例",
+    "python3 scripts/cip/search.py \"office reception\" --domain mockup": "搜尋展示用的情境圖",
+    "python3 scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --deliverable \"business card\" --industry \"consulting\"": "帶入 Logo 產生指定的識別應用項目（建議做法）",
+    "python3 scripts/cip/generate.py --brand \"TopGroup\" --logo /path/to/logo.png --industry \"consulting\" --set": "一次產生整套企業識別",
+    "python3 scripts/cip/generate.py --brand \"TopGroup\" --logo logo.png --deliverable \"business card\" --model pro": "用 Pro 模型產生（4K、文字較清晰）",
+    "python3 scripts/cip/generate.py --brand \"TechFlow\" --deliverable \"business card\" --no-logo-prompt": "沒有 Logo 時產生識別應用項目",
+    "python3 scripts/cip/render-html.py --brand \"TopGroup\" --industry \"consulting\" --images /path/to/cip-output": "把產出的識別圖片整理成 HTML 簡報",
+    "python3 scripts/icon/generate.py --prompt \"settings gear\" --style outlined": "依描述產生單一圖示",
+    "python3 scripts/icon/generate.py --name \"dashboard\" --category navigation --style duotone": "依名稱、分類與風格產生圖示",
+    "python3 scripts/icon/generate.py --prompt \"cloud upload\" --batch 4 --output-dir ./icons": "一次產生多個變化版本",
+    "python3 scripts/icon/generate.py --prompt \"user profile\" --sizes \"16,24,32,48\" --output-dir ./icons": "同一圖示輸出多種尺寸",
+    "pip install google-genai pillow": "安裝 AI 產圖所需的 Python 套件"
+  },
+  "design-system": {
+    "node scripts/generate-tokens.cjs --config tokens.json -o tokens.css": "依設定檔產生 CSS 設計 token",
+    "node scripts/validate-tokens.cjs --dir src/": "檢查原始碼是否都使用 token、沒有寫死數值",
+    "python3 scripts/search-slides.py \"investor pitch\"": "搜尋投影片範本（自動判斷類別）",
+    "python3 scripts/search-slides.py \"problem agitation\" -d copy": "只在文案類別搜尋",
+    "python3 scripts/search-slides.py \"revenue growth\" -d chart": "只在圖表類別搜尋",
+    "python3 scripts/search-slides.py \"problem slide\" --context --position 2 --total 9": "依投影片在整份簡報中的位置搜尋",
+    "python3 scripts/search-slides.py \"cta\" --context --position 9 --prev-emotion frustration": "依位置與上一頁的情緒搜尋"
+  },
+  "docx": {
+    "zip -d output.docx '*/' >/dev/null || true": "移除壓縮檔裡的資料夾項目，避免雲端協作時 Word 拒絕開啟",
+    "python scripts/office/soffice.py --headless --convert-to pdf output.docx": "把文件轉成 PDF 以便檢查",
+    "pdftoppm -jpeg -r 100 output.pdf page": "把 PDF 每頁轉成圖片",
+    "ls page-*.jpg": "列出產生的頁面圖片，接著逐張檢視",
+    "python3 -c \"import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall('unpacked')\" doc.docx": "解壓 .docx（不用 unzip，因為外部文件不可信）",
+    "python scripts/merge_runs.py unpacked/": "合併被切碎的文字片段，讓文字搜尋得到",
+    "python scripts/office/validate.py out.docx --original doc.docx": "檢查文件結構是否合法（--auto-repair 可修正常見問題）",
+    "python scripts/comment.py unpacked/ \"Fees & expenses cap is too low\"": "在已解壓的資料夾裡新增註解",
+    "python scripts/comment.py unpacked/ \"Agreed\" --parent 0": "回覆指定的註解",
+    "python scripts/comment.py contract.docx \"This cap is too low\" -o annotated.docx": "直接對 .docx 檔新增註解並另存"
+  },
+  "find-skills": {
+    "npx skills find [query] [--owner <owner>]": "用關鍵字搜尋公開技能，可指定擁有者",
+    "npx skills add <owner/repo@skill> -g -y": "全域安裝指定技能"
+  },
+  "pdf": {
+    "pdftotext input.pdf output.txt": "擷取文字",
+    "pdftotext -layout input.pdf output.txt": "擷取文字並保留版面",
+    "pdftotext -f 1 -l 5 input.pdf output.txt": "只擷取第 1 到 5 頁",
+    "qpdf --empty --pages file1.pdf file2.pdf -- merged.pdf": "合併多個 PDF",
+    "qpdf input.pdf --pages . 1-5 -- pages1-5.pdf": "取出第 1 到 5 頁",
+    "qpdf input.pdf --pages . 6-10 -- pages6-10.pdf": "取出第 6 到 10 頁",
+    "qpdf input.pdf output.pdf --rotate=+90:1": "把第 1 頁順時針旋轉 90 度",
+    "qpdf --password=mypassword --decrypt encrypted.pdf decrypted.pdf": "解除密碼保護",
+    "pdftk file1.pdf file2.pdf cat output merged.pdf": "合併 PDF",
+    "pdftk input.pdf burst": "把每一頁拆成獨立檔案",
+    "pdftk input.pdf rotate 1east output rotated.pdf": "旋轉第 1 頁",
+    "pdfimages -j input.pdf output_prefix": "擷取 PDF 內嵌的圖片"
+  },
+  "pptx": {
+    "python3 -c \"import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall('unpacked')\" deck.pptx": "解壓 .pptx 以便編輯",
+    "python scripts/add_slide.py unpacked/ slide2.xml --after slide2.xml": "複製一張投影片並回傳新檔路徑",
+    "python scripts/clean.py unpacked/": "刪除投影片後清掉沒人使用的投影片、媒體與關聯",
+    "python scripts/office/validate.py out.pptx --original deck.pptx": "對照原檔檢查簡報結構",
+    "python scripts/slide_text.py output.pptx": "列出每張投影片的文字（必做的內容檢查）",
+    "python scripts/slide_text.py output.pptx | grep -iE \"\\bx{3,}\\b|lorem|ipsum|\\bTODO|\\[insert|this.*(page|slide).*layout\"": "找出殘留的佔位文字，例如 lorem、TODO",
+    "python scripts/office/validate.py output.pptx": "檢查從零建立的簡報",
+    "python scripts/office/validate.py output.pptx --original src.pptx": "檢查由範本建立的簡報",
+    "python scripts/office/soffice.py --headless --convert-to pdf output.pptx": "把簡報轉成 PDF",
+    "rm -f slide-*.jpg": "清掉舊的投影片圖片",
+    "pdftoppm -jpeg -r 150 output.pdf slide": "把每頁轉成圖片",
+    "ls -1 \"$PWD\"/slide-*.jpg": "列出產生的投影片圖片"
+  },
+  "skill-creator": {
+    "kill $VIEWER_PID 2>/dev/null": "關閉結果檢視器",
+    "python -m scripts.run_loop --eval-set <path-to-trigger-eval.json> --skill-path <path-to-skill> --model <model-id-powering-this-session> --max-iterations 5 --verbose": "執行技能描述的最佳化迴圈（最多 5 輪）",
+    "python -m scripts.package_skill <path/to/skill-folder>": "把技能資料夾打包成可分享的檔案"
+  },
+  "ui-styling": {
+    "npx shadcn@latest init": "在專案初始化 shadcn/ui",
+    "npx shadcn@latest add button card dialog form": "加入指定的元件",
+    "npm install -D tailwindcss @tailwindcss/vite": "只安裝 Tailwind CSS",
+    "python3 scripts/shadcn_add.py button card dialog": "用腳本加入 shadcn 元件",
+    "python3 scripts/tailwind_config_gen.py --colors brand:blue --fonts display:Inter": "產生含品牌色與字型的 Tailwind 設定",
+    "python3 scripts/tailwind_config_gen.py --colors brand:blue --force": "強制覆寫現有的 Tailwind 設定"
+  },
+  "xlsx": {
+    "python scripts/recalc.py output.xlsx [timeout_seconds]": "重新計算試算表的公式（預設逾時 30 秒）"
+  },
+  "threejs-gltf-loading": {
+    "npx @gltf-transform/cli optimize in.glb out.glb --compress meshopt --texture-compress webp --texture-size 1024 --flatten false --join-named false": "壓縮模型：Meshopt 壓縮、WebP 貼圖最大 1024 px，保留具名節點與階層",
+    "npx @gltf-transform/cli validate out.glb": "驗證壓縮後的模型"
+  },
+  "unity-build-pipeline": {
+    "Unity -batchmode -quit -nographics -projectPath \"/path/to/Project\" -buildTarget win64 -executeMethod BuildScript.BuildWindows -logFile -": "不開編輯器視窗，從命令列建置 Windows 版"
+  },
+  "unity-build-size": {
+    "python scripts/build_report.py ~/Library/Logs/Unity/Editor.log --top 20": "從編輯器記錄列出最佔空間的前 20 項資產",
+    "python scripts/check_unity_build_size.py path/to/Project --platform WebGL --max-texture-size 2048": "檢查專案在指定平台的組建大小設定"
+  },
+  "chatgpt-web-image": {
+    "node \"C:\\Users\\home\\.agents\\tools\\chatgpt-web-image-mcp\\bin\\chatgpt-web-image.js\" check": "檢查瀏覽器連線與登入狀態",
+    "node \"C:\\Users\\home\\.agents\\tools\\chatgpt-web-image-mcp\\bin\\chatgpt-web-image.js\" generate --prompt \"雨后的江南石桥，电影感摄影，横向构图，无文字\" --surface images --output-dir \"S:\\gamer\\art\\out\"": "依提示詞產生圖片並存到指定資料夾"
+  },
+  "understand": {
+    "node \"<SKILL_DIR>/compute-batches.mjs\" \"$PROJECT_ROOT\"": "把專案檔案分批，準備分析",
+    "python \"<SKILL_DIR>/merge-batch-graphs.py\" \"$PROJECT_ROOT\"": "合併各批次的分析結果",
+    "node \"<SKILL_DIR>/prepare-symbol-retry.mjs\" \"$PROJECT_ROOT\"": "準備要重試的符號清單",
+    "node \"<SKILL_DIR>/finalize-incremental.mjs\" \"$PROJECT_ROOT\"": "完成增量更新並儲存",
+    "node \"$UA_DIR/tmp/ua-inline-validate.cjs\" \"$UA_DIR/intermediate/assembled-graph.json\" \"$UA_DIR/intermediate/review.json\"": "驗證組合後的知識圖譜"
+  },
+  "understand-figma": {
+    "node <SKILL_DIR>/figma-merge.mjs \"$PROJECT_ROOT\"": "把 Figma 的分析結果併入專案圖譜"
+  },
+  "finishing-a-development-branch": {
+    "git checkout <base-branch>": "切換到基底分支",
+    "git pull": "拉取最新變更",
+    "git merge <feature-branch>": "把功能分支合併進來",
+    "git branch -d <feature-branch>": "刪除已合併的功能分支",
+    "git push -u origin <feature-branch>": "推送分支並設定上游，準備開 PR",
+    "git branch -D <feature-branch>": "強制刪除分支（放棄這份工作時才用）",
+    "git worktree remove \"$WORKTREE_PATH\"": "移除這個 worktree",
+    "git worktree prune": "清掉失效的 worktree 登記",
+    "git -C \"$WORKTREE_PATH\" status --porcelain -uall": "檢查 worktree 裡是否還有未提交的變更"
+  },
+  "test-driven-development": {
+    "npm test path/to/test.test.ts": "只執行單一測試檔，確認它先失敗",
+    "npm test": "執行全部測試"
+  },
+  "using-git-worktrees": {
+    "git rev-parse --show-superproject-working-tree 2>/dev/null": "檢查目前是否在子模組裡",
+    "git check-ignore -q .worktrees 2>/dev/null || git check-ignore -q worktrees 2>/dev/null": "確認 worktree 資料夾已被 git 忽略",
+    "git worktree add \"$path\" -b \"$BRANCH_NAME\"": "建立新的 worktree 與分支",
+    "npm test / cargo test / pytest / go test ./...": "用專案對應的指令執行測試"
+  },
+  "video-interaction-mapper": {
+    "pip install Pillow --break-system-packages -q": "安裝影像處理套件 Pillow",
+    "python <SKILL_DIR>/scripts/extract_key_frames.py --input \"<video_path>\" --output /tmp/vim_frames_<timestamp>/ --mode scout": "快速抽取關鍵影格，先看過整段影片",
+    "python <SKILL_DIR>/scripts/extract_key_frames.py --input \"<video_path>\" --output /tmp/vim_frames_<timestamp>/full_frames/ --mode full --max-width 1600": "抽取完整解析度的影格",
+    "python <SKILL_DIR>/scripts/prepare_upload_frames.py --manifest /tmp/vim_frames_<timestamp>/frames_manifest.json --moments-file /tmp/vim_frames_<timestamp>/key_moments_resolved.json --output /tmp/vim_frames_<timestamp>/upload_manifest.json": "準備要上傳的截圖素材",
+    "python <SKILL_DIR>/scripts/generate_figma_calls.py --prepared /tmp/vim_frames_<timestamp>/upload_manifest.json --output-dir /tmp/vim_frames_<timestamp>/figma_calls/": "產生 Figma 呼叫檔",
+    "python <SKILL_DIR>/scripts/update_run_manifest.py --run-manifest /tmp/vim_frames_<timestamp>/figma_calls/run_manifest.json --storyboard-result /tmp/vim_frames_<timestamp>/storyboard_result.json": "執行後更新這次作業的紀錄"
+  },
+  "bigquery-data-transfer-service": {
+    "python3 scripts/bigquery_dts.py --project_id=<PROJECT_ID>": "查詢並驗證建立資料移轉所需的參數",
+    "bq show --format=prettyjson --transfer_config <RESOURCE_NAME>": "顯示既有資料移轉設定的內容"
+  },
+  "dak-setup": {
+    "gcloud --version": "確認已安裝 gcloud",
+    "gcloud auth application-default print-access-token > /dev/null 2>&1 && echo \"ADC_OK\" || echo \"ADC_MISSING\"": "確認應用程式預設憑證（ADC）是否可用",
+    "gcloud auth application-default login": "登入並建立應用程式預設憑證",
+    "gcloud config get-value project 2>/dev/null": "查看目前設定的 GCP 專案",
+    "gcloud config get-value compute/region 2>/dev/null": "查看目前設定的區域",
+    "node \"<skill directory>/scripts/dak-setup.js\" save --project-id \"<project id>\" --region \"<region>\" --services \"<service1>\" \"<service2>\" \"<service3>\"": "儲存專案、區域與要啟用的服務"
+  },
+  "discovering-gcp-data-assets": {
+    "gcloud dataplex entries search \"<NATURAL_LANGUAGE_QUERY>\" --project=\"<PROJECT_ID>\" --semantic-search --limit=50": "用自然語言語意搜尋資料資產",
+    "gcloud dataplex entries search \"<KEYWORD_SEARCH_QUERY>\" --project=\"<PROJECT_ID>\" --limit=50": "用關鍵字搜尋資料資產",
+    "gcloud dataplex context lookup --resources=\"<FULL_ENTRY_NAME>\"": "查詢指定資料項目的詳細脈絡"
+  },
+  "enforcing-resource-attribution": {
+    "bq query --use_legacy_sql=false \"SELECT 1\"": "未加標籤的查詢（對照用）",
+    "bq query --use_legacy_sql=false --label datacloud:vscode \"SELECT 1\"": "加上歸屬標籤的查詢",
+    "bq cp dataset1.table1 dataset2.table1_copy": "未加標籤的資料表複製（對照用）",
+    "bq cp --label datacloud:antigravity dataset1.table1 dataset2.table1_copy": "加上歸屬標籤的資料表複製",
+    "gcloud compute disks create my-disk --size=10GB": "建立磁碟的範例"
+  },
+  "federate-lakehouse-catalog": {
+    "gcloud services check biglake.googleapis.com": "確認 BigLake API 已啟用",
+    "gcloud config set api_endpoint_overrides/secretmanager https://secretmanager.<REGION>.rep.googleapis.com/": "把 Secret Manager 端點切到指定區域",
+    "gcloud secrets create <SECRET_NAME> --location=\"<REGION>\" --project=\"<PROJECT_ID>\" --data-file=credentials.json": "建立存放憑證的區域性密鑰",
+    "gcloud alpha biglake iceberg catalogs describe <CATALOG_NAME> --project=\"<PROJECT_ID>\" --location=\"<REGION>\" --format=\"value(biglake-service-account-id)\"": "查出目錄使用的服務帳戶",
+    "gcloud secrets add-iam-policy-binding <SECRET_NAME> --project=\"<PROJECT_ID>\" --location=\"<REGION>\" --member=\"serviceAccount:<SERVICE_ACCOUNT_EMAIL>\" --role=\"roles/secretmanager.secretAccessor\"": "授權該服務帳戶讀取密鑰",
+    "aws iam create-role --role-name <AWS_ROLE_NAME> --assume-role-policy-document file://trust_policy.json --max-session-duration 43200": "建立 AWS IAM 角色（先用暫時的信任政策）",
+    "gcloud alpha biglake iceberg catalogs update <CATALOG_NAME> --project=\"<PROJECT_ID>\" --refresh-interval=\"300s\"": "啟用目錄的背景重新整理"
+  },
+  "gcp-managed-airflow-dag-authoring": {
+    "ruff check path/to/dag.py": "靜態檢查 DAG 檔",
+    "gcloud storage cp path/to/dag.py gs://<TARGET_BUCKET>/dags/": "把 DAG 上傳到 GCS 的 dags 資料夾"
+  },
+  "gcp-managed-airflow-migrations": {
+    "ruff check {target_dag_file} --select AIR30": "檢查 DAG 是否相容 Airflow 3",
+    "gcloud composer environments describe <TARGET_ENV> --location <TARGET_REGION> --format=\"value(config.dagGcsPrefix)\"": "查出目標環境的 DAG 儲存路徑"
+  },
+  "google-cloud-auth-verification": {
+    "gcloud auth list --format=\"json\" && gcloud config list --format=\"json\"": "列出已登入的帳號與目前的 gcloud 設定"
+  },
+  "google-cloud-storage-basics": {
+    "npx skills add gemini-cli-extensions/google-cloud-storage --skill <skill-name>": "安裝指定的 GCS 專門技能"
+  },
+  "managing-python-dependencies": {
+    "python3 -m venv .venv": "建立虛擬環境",
+    ".venv/bin/pip install <package>": "在虛擬環境裡安裝套件",
+    ".venv/bin/pip freeze > requirements.txt": "把目前的套件版本寫入 requirements.txt"
+  },
+  "why": {
+    "git blame -L <start>,<end> <file>": "查出指定幾行最後是誰在哪次提交改的",
+    "git log --follow -p -- <file>": "查看檔案的完整歷史（包含改名前）與每次的差異",
+    "git log --oneline -20 -- <file>": "列出最近 20 次動到這個檔案的提交",
+    "git log -1 --format=%B <commit>": "顯示單一提交的完整訊息，通常附有相關工單",
+    "gh pr view <number> --json title,body,author,createdAt,mergedAt,labels,closingIssuesReferences,comments,reviews": "查看 PR 的標題、說明、留言與審查紀錄"
+  },
+  "remotion-create": {
+    "npx create-video@latest --yes --blank --no-tailwind .": "在空資料夾建立新的 Remotion 專案",
+    "npm i": "安裝相依套件",
+    "npx create-video@latest --yes --blank --no-tailwind my-video": "在新資料夾 my-video 建立專案",
+    "npx remotion studio --no-open": "啟動預覽但不自動開瀏覽器"
+  },
+  "remotion-studio": {
+    "npx remotion studio --no-open": "啟動 Remotion Studio 預覽但不自動開瀏覽器"
+  }
+}

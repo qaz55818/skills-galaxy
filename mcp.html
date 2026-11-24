@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP 監控</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* 色票與頂列沿用 console.html，三個頁面看起來是同一套 */
+  :root {
+    --bg: #10141d; --surface: #171c28; --raised: #1e2433; --line: rgba(233, 228, 216, .11); --line2: rgba(233, 228, 216, .06);
+    --text: #e9e4d8; --dim: #9a968c; --faint: #75716a; --accent: #f2c66d; --ok: #7ad6a0; --warn: #ffd27a; --risk: #ff8a7a;
+    --sans: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+    --serif: "Noto Serif TC", "PMingLiU", serif;
+    --mono: "JetBrains Mono", Consolas, monospace;
+    --r: 14px; --ease: cubic-bezier(.2, .7, .2, 1);
+  }
+  * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: rgba(233, 228, 216, .22) transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.55 var(--sans); }
+  body { min-height: 100vh; background: radial-gradient(1100px 420px at 8% -160px, rgba(242, 198, 109, .08), transparent 70%) no-repeat, radial-gradient(900px 500px at 100% 0, rgba(122, 214, 160, .04), transparent 70%) no-repeat, var(--bg); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: 0; padding: 0; text-align: left; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  .ico { display: inline-flex; flex: none; width: 16px; height: 16px; }
+  .ico svg { width: 100%; height: 100%; }
+  .ok { --c: var(--ok); } .auth { --c: var(--warn); } .fail { --c: var(--risk); } .unknown { --c: var(--dim); } .all { --c: var(--accent); } .off { --c: #8f95ab; }
+
+  /* 開關 */
+  .switch { position: relative; flex: none; width: 36px; height: 20px; border-radius: 99px; background: var(--raised); border: 1px solid var(--line); transition: background .25s, border-color .25s; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--dim); transition: transform .3s var(--ease), background .25s; }
+  .switch[aria-checked="true"] { background: color-mix(in srgb, var(--ok) 30%, var(--raised)); border-color: color-mix(in srgb, var(--ok) 55%, transparent); }
+  .switch[aria-checked="true"]::after { transform: translateX(16px); background: var(--ok); }
+  .switch:disabled { cursor: progress; }
+  .switch:disabled::after { animation: breathe .8s ease-in-out infinite alternate; }
+  @keyframes breathe { to { opacity: .35; } }
+
+  /* 即時連線指示 */
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+  .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .live.on i { background: var(--ok); box-shadow: 0 0 0 0 rgba(122, 214, 160, .6); animation: beacon 2s ease-out infinite; }
+  @keyframes beacon { to { box-shadow: 0 0 0 7px transparent; } }
+
+  /* 頂列 */
+  #bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 12px 18px; padding: 12px 28px; border-bottom: 1px solid var(--line); flex-wrap: wrap; background: rgba(16, 20, 29, .85); backdrop-filter: blur(12px); }
+  h1 { font: 700 20px/1.2 var(--serif); margin: 0; letter-spacing: .06em; }
+  .views { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .views a { padding: 5px 14px; text-decoration: none; color: var(--dim); }
+  .views a[aria-current] { background: var(--accent); color: #1a1405; font-weight: 600; }
+  .views a:hover:not([aria-current]) { color: var(--text); }
+  #q, select, dialog input, textarea { padding: 7px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+  #q { flex: 1; min-width: 160px; max-width: 360px; padding-left: 34px; background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239a968c' stroke-width='1.6'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 3.5 3.5'/%3E%3C/svg%3E") no-repeat 11px center; }
+  #q::placeholder { color: var(--faint); }
+  #q:focus, select:focus, dialog input:focus, textarea:focus { border-color: rgba(242, 198, 109, .55); outline: none; }
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px; border: 1px solid var(--line); border-radius: 8px; white-space: nowrap; transition: border-color .15s, color .15s, background .15s, transform .15s; }
+  .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn:active:not(:disabled) { transform: scale(.97); }
+  .btn:disabled { opacity: .45; cursor: progress; }
+  .btn.primary { background: var(--accent); color: #1a1405; border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover:not(:disabled) { color: #1a1405; filter: brightness(1.08); }
+  .btn.danger:hover:not(:disabled) { border-color: var(--risk); color: var(--risk); }
+  .spin svg { animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #tools { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #tools label { color: var(--dim); font-size: 12px; display: flex; gap: 6px; align-items: center; }
+
+  main { padding: 24px 28px 64px; max-width: 1320px; margin: 0 auto; }
+
+  /* 總覽：環形健康度 + 狀態卡（狀態卡同時是篩選器） */
+  #overview { display: grid; grid-template-columns: minmax(320px, 1fr) 2.2fr; gap: 14px; }
+  .panel { background: linear-gradient(180deg, rgba(255, 255, 255, .025), transparent 60%), var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+  .health { padding: 16px 20px; display: flex; align-items: center; gap: 20px; }
+  .ring { position: relative; width: 104px; height: 104px; flex: none; }
+  .ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 9; }
+  .ring .track { stroke: var(--raised); }
+  .ring .seg { stroke: var(--c); transition: stroke-dasharray .9s var(--ease), stroke-dashoffset .9s var(--ease); }
+  .ring div { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+  .ring strong { font: 600 26px/1 var(--sans); font-variant-numeric: tabular-nums; }
+  .ring strong small { font-size: 13px; color: var(--dim); font-weight: 400; }
+  .ring span { font-size: 10px; color: var(--dim); letter-spacing: .12em; margin-top: 3px; }
+  .health h2 { margin: 0 0 4px; font: 600 15px var(--sans); }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--dim); margin-bottom: 8px; }
+  .legend span::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 2px; background: var(--c); margin-right: 6px; }
+  #msg { color: var(--dim); font-size: 12px; min-height: 18px; }
+  #msg.err { color: var(--risk); }
+  #msg button { text-decoration: underline; color: var(--accent); margin-left: 8px; }
+  #segs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  #segs button { position: relative; overflow: hidden; padding: 14px 16px; color: var(--dim); font-size: 12px; transition: border-color .2s, background .2s, transform .2s var(--ease), box-shadow .2s; }
+  #segs button:hover { transform: translateY(-2px); border-color: rgba(233, 228, 216, .24); box-shadow: 0 10px 24px rgba(0, 0, 0, .25); }
+  #segs button[aria-pressed="true"] { border-color: var(--c); background: color-mix(in srgb, var(--c) 9%, var(--surface)); color: var(--text); }
+  #segs button::after { content: ""; position: absolute; right: -24px; bottom: -24px; width: 80px; height: 80px; border-radius: 50%; background: radial-gradient(color-mix(in srgb, var(--c) 22%, transparent), transparent 70%); pointer-events: none; }
+  #segs .tile { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); margin-bottom: 10px; }
+  #segs b { display: block; font: 600 26px/1.1 var(--sans); color: var(--text); font-variant-numeric: tabular-nums; margin-bottom: 2px; }
+  #segs .fail b, #segs .auth b { color: var(--c); }
+  #segs .zero b { color: var(--faint); }
+
+  /* 列表工具列 */
+  #listbar { display: flex; align-items: center; gap: 12px; margin: 26px 0 0; color: var(--dim); font-size: 12px; }
+  #listbar .grow { flex: 1; }
+  .toggle { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+  .toggle button { display: grid; place-items: center; width: 30px; height: 26px; border-radius: 6px; color: var(--dim); transition: background .15s, color .15s; }
+  .toggle button[aria-pressed="true"] { background: var(--raised); color: var(--accent); }
+
+  /* 每個來源一個區塊 */
+  .group { margin-top: 14px; }
+  .group > header { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; padding: 10px 4px; }
+  .group h2 { font: 600 15px var(--sans); margin: 0; letter-spacing: .03em; display: flex; align-items: center; gap: 9px; }
+  .group h2 .src { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--raised); color: var(--accent); }
+  .group h2 .n { font: 500 11px/1.6 var(--mono); color: var(--dim); background: var(--raised); border-radius: 99px; padding: 0 8px; }
+  .group header small { color: var(--dim); font-size: 12px; }
+  .mini { margin-left: auto; display: flex; gap: 12px; font-size: 12px; color: var(--dim); }
+  .mini span::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: 2px; }
+  .shared { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 10px; padding: 11px 14px; font-size: 13px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); background: color-mix(in srgb, var(--c) 7%, var(--surface)); }
+  .shared .ico { color: var(--c); margin-top: 2px; }
+  .shared small { color: var(--dim); margin-left: 8px; }
+
+  /* 伺服器卡片：同一個元件，卡片 / 列表兩種排法 */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; }
+  .card { position: relative; overflow: hidden; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "av who badge" "tg tg tg" "spark spark act"; gap: 12px 12px; align-items: center; padding: 16px; transition: transform .2s var(--ease), border-color .2s, box-shadow .2s; }
+  .card::before { content: ""; position: absolute; inset: 0 0 auto; height: 2px; background: linear-gradient(90deg, var(--c), transparent 70%); opacity: .8; }
+  .card:hover, .card:focus-within { transform: translateY(-2px); border-color: color-mix(in srgb, var(--c) 40%, var(--line)); box-shadow: 0 14px 30px rgba(0, 0, 0, .3); }
+  .av { grid-area: av; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 11px; font: 700 17px var(--sans); color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .3); background: linear-gradient(135deg, hsl(var(--h) 55% 50%), hsl(calc(var(--h) + 40) 60% 32%)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .2); }
+  .av svg { width: 22px; height: 22px; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)); }
+  .av.brand { background: linear-gradient(135deg, color-mix(in srgb, var(--b) 88%, #fff), color-mix(in srgb, var(--b) 78%, #000)); }
+  .av.dark { color: #10141d; }
+  .av.dark svg { filter: none; }
+  .who { grid-area: who; min-width: 0; }
+  .who b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .meta { display: flex; gap: 8px; align-items: center; color: var(--dim); font: 11px/1.6 var(--mono); }
+  .meta .chip { display: inline-flex; align-items: center; gap: 4px; padding: 0 6px; border: 1px solid var(--line); border-radius: 5px; }
+  .meta .chip .ico { width: 11px; height: 11px; }
+  .badge { grid-area: badge; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--c); font-size: 12px; font-weight: 500; padding: 3px 10px 3px 7px; border-radius: 99px; background: color-mix(in srgb, var(--c) 13%, transparent); }
+  .badge .ico { width: 13px; height: 13px; }
+  .badge.fail .ico { filter: drop-shadow(0 0 4px var(--risk)); }
+  .badge.busy .ico svg { animation: spin 1.2s linear infinite; }
+  .tg { grid-area: tg; min-width: 0; }
+  .tg code { display: block; font: 11.5px/1.6 var(--mono); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 6px 10px; background: rgba(0, 0, 0, .2); border-radius: 7px; }
+  .tg > p.desc { margin: 0 0 8px; padding: 0; border: 0; font-size: 13px; line-height: 1.6; color: color-mix(in srgb, var(--text) 82%, var(--dim)); }
+  #list.list .tg > p.desc { margin-bottom: 2px; }
+  .tg > p { margin: 8px 0 0; font-size: 13px; padding-left: 10px; border-left: 2px solid var(--c); }
+  .tg details { margin-top: 6px; font-size: 12px; }
+  .tg summary { cursor: pointer; color: var(--faint); width: max-content; }
+  .tg summary:hover { color: var(--dim); }
+  .tg details p { margin: 4px 0 0; font: 11px/1.6 var(--mono); overflow-wrap: anywhere; color: var(--dim); }
+  .spark { grid-area: spark; display: flex; gap: 2px; align-items: flex-end; height: 20px; }
+  .spark i { width: 4px; height: 100%; border-radius: 1.5px; background: var(--c); opacity: .85; transform-origin: bottom; animation: grow .5s var(--ease) both; animation-delay: calc(var(--i) * 18ms); }
+  .spark i.unknown { opacity: .3; height: 35%; }
+  @keyframes grow { from { transform: scaleY(0); } }
+  .gpt { margin-top: 10px; padding: 10px 12px; border-radius: 9px; background: rgba(0, 0, 0, .18); border: 1px solid var(--line2); }
+  .gpt ul { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; font-size: 12.5px; }
+  .gpt li { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .gpt li i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--c); transform: translateY(-1px); }
+  .gpt li span { flex: none; color: var(--dim); }
+  .gpt li b { margin-left: auto; font-weight: 500; text-align: right; overflow-wrap: anywhere; }
+  .gpt-act { display: flex; flex-wrap: wrap; gap: 6px; }
+  .gpt-act .btn { padding: 4px 10px; font-size: 12px; }
+  .gpt small { display: block; margin-top: 8px; color: var(--faint); font-size: 11px; }
+  .act { grid-area: act; display: flex; gap: 4px; justify-content: flex-end; align-items: center; }
+  .act .switch { margin-left: 6px; }
+  .card.off { background: var(--bg); }
+  .card.off .av { filter: grayscale(1) brightness(.75); }
+  .card.off .who b, .card.off .tg code { color: var(--dim); }
+  .group header .switch { margin-left: 4px; }
+  .icon-btn { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--dim); border: 1px solid transparent; transition: background .15s, color .15s, border-color .15s; }
+  .icon-btn:hover:not(:disabled) { background: var(--raised); color: var(--accent); border-color: var(--line); }
+  .icon-btn.danger:hover:not(:disabled) { color: var(--risk); }
+  .icon-btn.done { color: var(--ok); }
+  .icon-btn:disabled { opacity: .35; cursor: progress; }
+
+  #list.list .cards { grid-template-columns: 1fr; gap: 0; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: var(--surface); }
+  #list.list .card { grid-template-columns: 34px minmax(150px, 1fr) minmax(0, 2.2fr) 100px 112px auto; grid-template-areas: "av who tg spark badge act"; padding: 10px 16px; border: 0; border-radius: 0; border-top: 1px solid var(--line2); background: none; }
+  #list.list .card:first-child { border-top: 0; }
+  #list.list .card::before { inset: 0 auto 0 0; width: 2px; height: auto; background: var(--c); }
+  #list.list .card:hover, #list.list .card:focus-within { transform: none; box-shadow: none; background: var(--raised); }
+  #list.list .av { width: 34px; height: 34px; font-size: 14px; border-radius: 9px; }
+  #list.list .av svg { width: 19px; height: 19px; }
+  #list.list .badge { justify-self: start; }
+  #list.list .tg code { background: none; padding: 0; }
+
+  /* 動畫：新出現的卡片淡入、狀態改變時閃一下、檢查中掃光 */
+  .enter { animation: rise .5s var(--ease) both; animation-delay: var(--d, 0ms); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+  .changed { animation: flash 1.1s ease-out; }
+  @keyframes flash { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); } to { box-shadow: 0 0 0 14px transparent; } }
+  .card.busy::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(100deg, transparent 35%, rgba(242, 198, 109, .07) 50%, transparent 65%); background-size: 250% 100%; animation: sweep 1.3s linear infinite; }
+  @keyframes sweep { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+  #empty { padding: 56px 0; text-align: center; color: var(--dim); }
+  #empty .ico { width: 36px; height: 36px; color: var(--faint); margin-bottom: 8px; }
+
+  dialog { background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 16px; padding: 24px; width: min(580px, calc(100vw - 32px)); box-shadow: 0 30px 80px rgba(0, 0, 0, .5); }
+  dialog[open] { animation: pop .25s var(--ease); }
+  @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+  dialog::backdrop { background: rgba(5, 8, 14, .72); backdrop-filter: blur(3px); }
+  dialog h3 { font: 700 18px var(--serif); margin: 0 0 4px; }
+  dialog p { color: var(--dim); font-size: 12px; margin: 0 0 14px; }
+  dialog label { display: block; margin: 14px 0 5px; font-size: 12px; color: var(--dim); }
+  dialog input, textarea { width: 100%; background: var(--bg); }
+  textarea { font: 12px/1.6 var(--mono); min-height: 160px; resize: vertical; }
+  .tpl { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .tpl .btn { font-size: 12px; padding: 3px 10px; color: var(--dim); }
+  #a-err { color: var(--risk); font-size: 12px; min-height: 18px; margin-top: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  dialog footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+  @media (max-width: 1080px) {
+    #overview { grid-template-columns: 1fr; }
+    #list.list .card { grid-template-columns: 34px minmax(0, 1fr) auto; grid-template-areas: "av who badge" "av tg tg" "av spark act"; }
+  }
+  @media (max-width: 680px) {
+    #bar, main { padding-left: 16px; padding-right: 16px; }
+    #tools { margin-left: 0; width: 100%; }
+    #segs { grid-template-columns: repeat(3, 1fr); }
+    .health { flex-direction: column; align-items: flex-start; }
+    .mini { margin-left: 0; }
+    .cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header id="bar">
+  <h1>MCP 監控</h1>
+  <nav class="views" aria-label="切換檢視"><a href="index.html">星圖</a><a href="console.html">控制台</a><a href="mcp.html" aria-current="page">MCP</a></nav>
+  <input id="q" type="search" placeholder="搜尋名稱、功能說明或指令" aria-label="搜尋 MCP 伺服器">
+  <div id="tools">
+    <label>自動檢查
+      <select id="auto"><option value="0">關閉</option><option value="5">每 5 分鐘</option><option value="15">每 15 分鐘</option></select>
+    </label>
+    <button class="btn" id="check"><span id="check-t">立即檢查</span></button>
+    <button class="btn primary" id="add">新增伺服器</button>
+  </div>
+</header>
+<main>
+  <section id="overview" aria-label="總覽">
+    <div class="panel health">
+      <div class="ring" id="ring"></div>
+      <div>
+        <h2>連線健康度</h2>
+        <div class="legend" id="legend"></div>
+        <div id="msg" role="status" aria-live="polite">載入中…</div>
+      </div>
+    </div>
+    <div id="segs" role="group" aria-label="依連線狀態篩選"></div>
+  </section>
+  <div id="listbar"><span id="shown"></span><span class="live" id="live"><i></i><span>連線中…</span></span><span class="grow"></span>
+    <div class="toggle" role="group" aria-label="排列方式"><button data-v="grid" title="卡片" aria-label="卡片"></button><button data-v="list" title="列表" aria-label="列表"></button></div>
+  </div>
+  <div id="list"></div>
+  <div id="empty" hidden></div>
+</main>
+
+<dialog id="dlg" aria-labelledby="a-title">
+  <form method="dialog" id="a-form">
+    <h3 id="a-title">新增 MCP 伺服器</h3>
+    <p>會寫入使用者設定，所有專案的 Claude Code 都能使用。金鑰請放在設定的 env 或 headers 裡，只會留在這台電腦。</p>
+    <label for="a-name">名稱</label>
+    <input id="a-name" required pattern="[A-Za-z0-9][A-Za-z0-9_\-]{0,62}" placeholder="my-server" autocomplete="off" spellcheck="false">
+    <label for="a-json">設定（JSON）</label>
+    <textarea id="a-json" required spellcheck="false"></textarea>
+    <div class="tpl"><button type="button" class="btn" data-t="stdio">填入本機程式範本</button><button type="button" class="btn" data-t="http">填入遠端 HTTP 範本</button></div>
+    <div id="a-err" role="alert"></div>
+    <footer><button type="button" class="btn" id="a-cancel">取消</button><button type="submit" class="btn primary" id="a-save">新增伺服器</button></footer>
+  </form>
+</dialog>
+
+<script type="module">
+import DESC from './mcp-descriptions.zh-TW.js';
+import BRAND from './mcp-icons.js';
+const $ = (id) => document.getElementById(id);
+const DESC_LC = new Map(Object.entries(DESC).map(([k, v]) => [k.toLowerCase(), v]));
+// 伺服器 → 品牌圖示（名稱比對，先具體後籠統）；沒對到的用通用 MCP 圖示配名稱算出的色相
+const BRAND_RULES = [
+  [/claude/i, 'claude'], [/supabase/i, 'supabase'], [/canva/i, 'canva'], [/gmail/i, 'gmail'], [/sentry/i, 'sentry'],
+  [/context7/i, 'upstash'], [/figma/i, 'figma'], [/playwright/i, 'playwright'], [/chatgpt|openai/i, 'openai'],
+  [/bigquery/i, 'googlebigquery'], [/spanner/i, 'googlecloudspanner'], [/gcs|storage/i, 'googlecloudstorage'],
+  [/spark/i, 'apachespark'], [/notebook|jupyter/i, 'jupyter'], [/^dak-|google/i, 'googlecloud'],
+];
+const avatar = (s) => {
+  const key = BRAND_RULES.find(([re]) => re.test(s.label))?.[1], b = BRAND[key] ?? BRAND.mcp;
+  const n = el('div', { className: `av${b.hex ? ' brand' : ''}${b.dark ? ' dark' : ''}`, title: key ?? 'MCP', style: b.hex ? `--b:#${b.hex}` : `--h:${hue(s.label)}` });
+  n.innerHTML = `<svg viewBox="${b.vb}" fill="currentColor" aria-hidden="true">${b.body}</svg>`; // 內容來自本機內嵌的 mcp-icons.js
+  return n;
+};
+const desc = (s) => DESC_LC.get(s.label.toLowerCase()) ?? '';
+const el = (tag, props = {}, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
+const STATUS = { fail: '連線失敗', auth: '需要授權', ok: '已連線', off: '已停用', unknown: '未檢查' };
+// 線條圖示（24×24，stroke 用 currentColor，跟著文字顏色走）
+const ICONS = {
+  all: '<path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  ok: '<path d="M20 6 9 17l-5-5"/>',
+  fail: '<path d="M18 6 6 18M6 6l12 12"/>',
+  auth: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M17 6l3 3M15 8l2 2"/>',
+  unknown: '<circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+  busy: '<path d="M21 12a9 9 0 1 1-9-9"/>',
+  off: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  copy: '<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/>',
+  cloud: '<path d="M17.5 19H8a6 6 0 1 1 5.7-7.9A4.5 4.5 0 1 1 17.5 19z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  puzzle: '<path d="M19.4 13H21v-3a2 2 0 0 0-2-2h-3V6.5a2.5 2.5 0 0 0-5 0V8H8a2 2 0 0 0-2 2v2.5h1.5a2.5 2.5 0 0 1 0 5H6V20a2 2 0 0 0 2 2h3v-1.5a2.5 2.5 0 0 1 5 0V22h3a2 2 0 0 0 2-2v-3h-1.6a2 2 0 0 1 0-4z"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  monitor: '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  terminal: '<path d="m4 17 6-5-6-5M12 19h8"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+};
+const ico = (name) => { const s = el('span', { className: 'ico' }); s.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name]}</svg>`; return s; };
+// 各來源在哪裡管理（這頁只能增刪使用者設定）＋ 圖示
+const MANAGED = [
+  [/^使用者設定/, '可在這頁新增與移除', 'user'],
+  [/^專案設定/, '在該專案的 .mcp.json 或 claude mcp 指令管理', 'folder'],
+  [/^claude\.ai/, '在 claude.ai 的「設定 → 連接器」管理', 'cloud'],
+  [/^外掛/, '隨外掛啟用或停用，在 Claude Code 輸入 /plugin 管理', 'puzzle'],
+  [/^Claude 桌面版/, '在桌面版的 claude_desktop_config.json 管理；這裡不檢查連線', 'monitor'],
+];
+const TEMPLATES = {
+  stdio: { command: 'npx', args: ['-y', '套件名稱'], env: {} },
+  http: { type: 'http', url: 'https://example.com/mcp', headers: {} },
+};
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const f = { seg: 'all', q: '', view: 'grid' };
+let data = { at: null, servers: [], history: [] }, busy = false, timer = 0;
+const seen = new Set(), last = new Map(); // 已畫過的卡片（不再播進場動畫）與上次狀態（變了就閃一下）
+
+const call = async (path, body) => {
+  const res = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Skills-Galaxy': '1' }, body: JSON.stringify(body) });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error ?? `請求失敗（${res.status}）`);
+  return json;
+};
+const say = (text, err = false, ...extra) => { $('msg').className = err ? 'err' : ''; $('msg').replaceChildren(text, ...extra); };
+const ago = (iso) => { const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? '剛剛' : m < 60 ? `${m} 分鐘前` : new Date(iso).toLocaleString('zh-TW', { hour12: false }); };
+const hue = (s) => [...s].reduce((h, ch) => (h * 31 + ch.codePointAt(0)) % 360, 7);
+// 數字從舊值滾到新值
+const tween = (node, to, fmt = String) => {
+  const from = node._v ?? 0; node._v = to;
+  if (from === to || reduced.matches) { node.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const step = (t) => { const p = Math.min(1, (t - t0) / 800), e = 1 - (1 - p) ** 3; node.textContent = fmt(Math.round(from + (to - from) * e)); if (p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+};
+const iconBtn = (name, label, cls = '') => { const b = el('button', { className: `icon-btn ${cls}`, title: label }, ico(name)); b.setAttribute('aria-label', label); return b; };
+const copy = (b, text) => navigator.clipboard.writeText(text).then(() => { b.replaceChildren(ico('ok')); b.classList.add('done'); setTimeout(() => { b.replaceChildren(ico('copy')); b.classList.remove('done'); }, 1200); });
+
+// ---- 總覽（只建一次，之後只更新數字，動畫才接得上）----
+const R = 40, C = 2 * Math.PI * R, NS = 'http://www.w3.org/2000/svg';
+const circle = (cls) => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', 50); c.setAttribute('cy', 50); c.setAttribute('r', R); c.setAttribute('class', cls); return c; };
+const ringSvg = document.createElementNS(NS, 'svg'); ringSvg.setAttribute('viewBox', '0 0 100 100'); ringSvg.setAttribute('aria-hidden', 'true');
+const segs = Object.fromEntries(Object.keys(STATUS).map((k) => [k, circle(`seg ${k}`)]));
+ringSvg.append(circle('track'), ...Object.values(segs));
+const pct = el('strong');
+$('ring').append(ringSvg, el('div', {}, pct, el('span', { textContent: '正常率' })));
+const tiles = Object.fromEntries([['all', '全部伺服器'], ...Object.entries(STATUS)].map(([k, label]) => {
+  const n = el('b', { textContent: '0' });
+  const b = el('button', { className: `panel ${k}` }, el('span', { className: 'tile' }, ico(k)), n, label);
+  b.onclick = () => { f.seg = f.seg === k ? 'all' : k; render(); };
+  $('segs').append(b);
+  return [k, { b, n }];
+}));
+
+const overview = () => {
+  const count = (k) => data.servers.filter((s) => k === 'all' || s.status === k).length;
+  const total = count('all'), checked = total - count('unknown') - count('off');
+  let at = 0;
+  for (const [k, c] of Object.entries(segs)) {
+    const len = total ? (count(k) / total) * C : 0, gap = len > 3 ? 1.5 : 0;
+    c.style.strokeDasharray = `${Math.max(0, len - gap)} ${C}`; c.style.strokeDashoffset = String(-at); at += len;
+  }
+  if (checked) { const v = el('span'); pct.replaceChildren(v, el('small', { textContent: '%' })); v._v = pct._v; tween(v, Math.round((count('ok') / checked) * 100)); pct._v = v._v; } else pct.textContent = '—';
+  $('legend').replaceChildren(...Object.keys(STATUS).filter(count).map((k) => el('span', { className: k, textContent: `${STATUS[k]} ${count(k)}` })));
+  for (const [k, { b, n }] of Object.entries(tiles)) { tween(n, count(k)); b.classList.toggle('zero', !count(k)); b.setAttribute('aria-pressed', String(f.seg === k)); }
+};
+
+// ---- 伺服器卡片 ----
+let nth = 0;
+const card = (s, sharedHint) => {
+  const state = s.checking ? 'busy' : s.status;
+  const cls = [`panel card ${s.status}`];
+  if (s.checking) cls.push('busy');
+  if (!seen.has(s.id)) { cls.push('enter'); seen.add(s.id); }
+  else if (last.has(s.id) && last.get(s.id) !== s.status && !s.checking) cls.push('changed');
+  if (!s.checking) last.set(s.id, s.status);
+  const spark = el('div', { className: 'spark' }, ...data.history.slice(-20).map((h, i) => el('i', { className: h.states[s.id] ?? 'unknown', style: `--i:${i}`, title: `${new Date(h.at).toLocaleString('zh-TW', { hour12: false })}　${STATUS[h.states[s.id]] ?? '當時不存在'}` })));
+  spark.setAttribute('aria-label', `最近 ${Math.min(20, data.history.length)} 次檢查`);
+  const cp = iconBtn('copy', '複製目標'); cp.onclick = () => copy(cp, s.target);
+  const act = el('div', { className: 'act' }, cp);
+  if (!s.off && !s.id.startsWith('desktop:')) { const re = iconBtn('refresh', '重新檢查'); re.disabled = busy; re.onclick = () => check(s.id); act.prepend(re); }
+  if (s.removable || (s.off && !s.plugin)) { const rm = iconBtn('trash', '移除', 'danger'); rm.onclick = () => remove(s, rm); act.append(rm); }
+  if (s.toggle && !s.plugin) act.append(toggler(s, s.label)); // 外掛的開關放在區塊標題（整個外掛一起切）
+  const c = el('article', { className: cls.join(' ') },
+    // 外掛子伺服器常共用前綴（dak-alloydb、dak-gcs），取前綴後那段的首字才分得出來
+    avatar(s),
+    el('div', { className: 'who' }, el('b', { textContent: s.label, title: s.label }),
+      el('div', { className: 'meta' }, el('span', { className: 'chip' }, ico(/stdio/i.test(s.type) ? 'terminal' : 'globe'), s.type),
+        ...(s.ms && !s.checking ? [el('span', { textContent: `${(s.ms / 1000).toFixed(1)}s` })] : []))),
+    el('div', { className: `badge ${s.checking ? 'unknown busy' : s.status}` }, ico(state), s.checking ? '檢查中' : STATUS[s.status]),
+    el('div', { className: 'tg' }, ...(desc(s) ? [el('p', { className: 'desc', textContent: desc(s) })] : []),
+      el('code', { textContent: s.target, title: s.target }),
+      ...(s.hint && s.hint !== sharedHint ? [el('p', { textContent: s.hint })] : []),
+      ...(s.detail ? [el('details', {}, el('summary', { textContent: '錯誤原文' }), el('p', { textContent: s.detail, lang: 'en' }))] : []),
+      ...(s.id === GPT_ID ? [gptBox] : [])),
+    spark, act);
+  if (cls.includes('enter')) c.style.setProperty('--d', `${Math.min(nth++ * 35, 500)}ms`);
+  return c;
+};
+
+const group = (source, list) => {
+  const n = (k) => list.filter((s) => s.status === k).length;
+  const [, where = '', icon = 'all'] = MANAGED.find(([re]) => re.test(source)) ?? [];
+  // 同一組有好幾個伺服器給同一句建議（例如同一外掛的子伺服器）時，只在區塊頂端說一次
+  const byHint = Map.groupBy(list.filter((s) => s.hint), (s) => s.hint);
+  const hinted = [...byHint.values()].reduce((a, b) => (b.length > a.length ? b : a), []);
+  const shared = hinted.length > 1 ? hinted[0].hint : '';
+  const plug = list[0].plugin && list.every((s) => s.plugin === list[0].plugin) ? list[0] : null;
+  return el('section', { className: 'group' },
+    el('header', {},
+      el('h2', {}, el('span', { className: 'src' }, ico(icon)), source, el('span', { className: 'n', textContent: list.length }), ...(plug ? [toggler(plug, `外掛 ${plug.plugin}`)] : [])),
+      el('small', { textContent: where }),
+      el('div', { className: 'mini' }, ...Object.keys(STATUS).filter(n).map((k) => el('span', { className: k, textContent: `${n(k)} ${STATUS[k]}` })))),
+    ...(shared ? [el('p', { className: `shared ${hinted[0].status}` }, ico('info'), el('span', {}, shared, el('small', { textContent: `適用這組 ${hinted.length} 個伺服器` })))] : []),
+    el('div', { className: 'cards' }, ...list.map((s) => card(s, shared))));
+};
+
+// ---- chatgpt-web-image：卡片內的瀏覽器狀態與快捷操作（桌面版伺服器 CLI 不檢查，改看它控制的 Chrome）----
+const GPT_ID = 'desktop:chatgpt-web-image';
+let gpt = null, gptBusy = false;
+const gptBox = el('div', { className: 'gpt' }); // 同一個節點，卡片重畫時搬過去，自動更新不必整頁重畫
+const gptState = (g) => (!g ? 'unknown' : !g.cdp || !g.chrome ? 'fail' : g.login === 'in' ? 'ok' : g.login === 'out' ? 'auth' : 'unknown');
+const LOGIN = { in: ['ok', '已登入'], out: ['auth', '未登入'], unknown: ['unknown', '無法判斷（可能卡在驗證頁）'] };
+const gptRows = (g) => {
+  if (!g) return [['unknown', '狀態', '讀取中…']];
+  if (!g.cdp) return [['fail', 'CDP', '桌面版設定沒有本機的 CHATGPT_CDP_URL']];
+  const host = g.cdp.replace(/^https?:\/\//, '');
+  return [
+    g.chrome ? ['ok', 'Chrome 除錯埠', `${host} · ${g.version.replace(/^[^/]*\//, 'Chrome ')}`] : ['fail', 'Chrome 除錯埠', `${host} 沒有回應，專用 Chrome 未啟動`],
+    ...(g.chrome ? [g.tab ? ['ok', 'ChatGPT 分頁', `${g.tab.replace(/^https:\/\//, '')}${g.tabs > 1 ? `（共 ${g.tabs} 個）` : ''}`] : ['unknown', 'ChatGPT 分頁', '沒有開啟，無法確認登入']] : []),
+    ...(g.tab ? [[LOGIN[g.login]?.[0] ?? 'unknown', '登入狀態', LOGIN[g.login]?.[1] ?? '無法判斷']] : []),
+    ...(g.busy ? [['ok', '目前', '正在產圖']] : []),
+  ];
+};
+const gptPaint = () => {
+  const g = gpt;
+  const btn = (label, icon, fn, primary = false) => { const b = el('button', { type: 'button', className: `btn${primary ? ' primary' : ''}`, disabled: gptBusy }, ico(icon), label); b.onclick = fn; return b; };
+  const open = (page, note) => () => gptDo('/api/gptimg/open', { page }, note);
+  const acts = [];
+  if (g?.cdp && !g.chrome) acts.push(btn('啟動 Chrome', 'monitor', open('home', '正在啟動專用 Chrome…'), true));
+  else if (g?.chrome && !g.tab) acts.push(btn('開啟 ChatGPT', 'globe', open('home'), true));
+  if (g?.cdp && g.login !== 'in') acts.push(btn('網頁登入', 'user', open('login', '已在專用 Chrome 開啟登入頁，登入完成後按「重新檢查」。'), g.login === 'out'));
+  acts.push(btn('重新檢查', 'refresh', () => gptDo('/api/gptimg')), btn('圖片資料夾', 'folder', () => gptDo('/api/gptimg/outputs', {})));
+  gptBox.replaceChildren(
+    el('ul', {}, ...gptRows(g).map(([c, k, v]) => el('li', { className: c }, el('i'), el('span', { textContent: k }), el('b', { textContent: v, title: v })))),
+    el('div', { className: 'gpt-act' }, ...acts),
+    ...(g ? [el('small', { textContent: `${new Date(g.at).toLocaleTimeString('zh-TW', { hour12: false })} 檢查・頁面開著時每 30 秒更新` })] : []));
+};
+const gptSet = (g) => { const changed = gptState(g) !== gptState(gpt); gpt = g; gptPaint(); if (changed) render(); };
+const gptDo = async (path, body, note) => {
+  if (gptBusy) return;
+  gptBusy = true; gptPaint(); if (note) say(note);
+  try { const r = await call(path, body); if (r.at) gptSet(r); } catch (e) { say(e.message, true); } finally { gptBusy = false; gptPaint(); }
+};
+const gptRefresh = () => { if (!gptBusy && !document.hidden) call('/api/gptimg').then(gptSet, () => {}); };
+
+const render = () => {
+  const gs = data.servers.find((s) => s.id === GPT_ID);
+  if (gs && gpt) gs.status = gptState(gpt); // 卡片徽章、總覽圓環都跟著瀏覽器狀態
+  overview();
+  const q = f.q.trim().toLowerCase();
+  const rows = data.servers.filter((s) => (f.seg === 'all' || s.status === f.seg) && (!q || `${s.name} ${s.source} ${s.target} ${s.hint} ${desc(s)}`.toLowerCase().includes(q)));
+  // 依來源分組；組內壞的排前面
+  const order = Object.keys(STATUS);
+  const groups = Map.groupBy(rows.toSorted((a, b) => order.indexOf(a.status) - order.indexOf(b.status) || a.label.localeCompare(b.label)), (s) => s.source);
+  nth = 0;
+  $('list').className = f.view;
+  $('list').replaceChildren(...[...groups].map(([source, list]) => group(source, list)));
+  $('shown').textContent = data.servers.length ? `顯示 ${rows.length} / ${data.servers.length} 個伺服器` : '';
+  for (const b of document.querySelectorAll('.toggle button')) b.setAttribute('aria-pressed', String(b.dataset.v === f.view));
+  $('empty').hidden = !!rows.length || !data.at;
+};
+
+const status = () => {
+  if (!data.at) return;
+  const bad = data.servers.filter((s) => s.status === 'fail' || s.status === 'auth').length;
+  say(`上次檢查：${ago(data.at)}。${bad ? `${bad} 個伺服器需要處理。` : '全部正常。'}`);
+};
+// 檢查在伺服器背景進行。狀態由 /api/mcp/events 即時推送（其他分頁、終端機改的設定也會推過來）；
+// 推送斷線時才退回每 0.7 秒輪詢。
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let live = false;
+const setBusy = (on) => { busy = on; $('check').disabled = on; $('check').classList.toggle('spin', on); $('check-t').textContent = on ? '檢查中…' : '立即檢查'; };
+const apply = (view) => {
+  data = view;
+  if (data.checking) {
+    if (!busy) setBusy(true);
+    const pending = data.servers.filter((s) => s.checking).length, total = data.servers.filter((s) => !s.off && !s.id.startsWith('desktop:')).length;
+    say(data.servers.length ? `檢查中：已完成 ${total - pending} / ${total}，連不上的伺服器會等到逾時才回報。` : '第一次檢查，正在取得伺服器清單…');
+  } else if (busy) { setBusy(false); if (data.error) say(data.error, true); else status(); }
+  render();
+};
+const poll = async () => { while (data.checking && !live) { await sleep(700); apply(await call('/api/mcp')); } };
+const check = async (id) => {
+  if (busy) return;
+  try { apply(await call('/api/mcp/check', id ? { id } : {})); await poll(); } catch (e) { say(e.message, true); }
+};
+const setLive = (on) => { live = on; $('live').classList.toggle('on', on); $('live').lastChild.textContent = on ? '即時更新' : '重新連線中…'; };
+const connect = () => {
+  const es = new EventSource('/api/mcp/events');
+  es.onopen = () => setLive(true);
+  es.onmessage = (e) => { try { apply(JSON.parse(e.data)); } catch { /* 略過壞掉的訊息 */ } };
+  es.onerror = () => { setLive(false); poll().catch(() => {}); }; // EventSource 會自己重連
+};
+
+// 開關：先把開關切過去並鎖住，伺服器完成後以推送 / 回傳結果為準
+const pending = new Map(); // 切換中的 id → 目標狀態；切換途中收到推送重畫時開關不會跳回去
+const toggler = (s, what) => {
+  const sw = el('button', { className: 'switch', title: s.off ? `啟用 ${what}` : `停用 ${what}` });
+  sw.setAttribute('role', 'switch'); sw.setAttribute('aria-checked', String(pending.get(s.id) ?? !s.off)); sw.setAttribute('aria-label', `${what} 啟用`);
+  sw.disabled = pending.has(s.id);
+  sw.onclick = () => toggle(s, sw);
+  return sw;
+};
+const toggle = async (s, sw) => {
+  const on = !!s.off;
+  if (pending.has(s.id)) return;
+  if (s.plugin) {
+    const n = data.servers.filter((x) => x.plugin === s.plugin).length;
+    if (!confirm(`${on ? '啟用' : '停用'}外掛「${s.plugin}」？\n會同時${on ? '啟用' : '停用'}它的 ${n} 個 MCP 伺服器，以及外掛裡的技能、指令等元件。\n已開著的 Claude Code 要重新啟動才會生效。`)) return;
+  }
+  pending.set(s.id, on); sw.setAttribute('aria-checked', String(on)); sw.disabled = true;
+  say(`${on ? '啟用' : '停用'}中：${s.plugin ?? s.label}…`);
+  try {
+    const view = await call('/api/mcp/toggle', { id: s.id, on });
+    pending.delete(s.id); apply(view);
+    say(`已${on ? '啟用' : '停用'} ${s.plugin ?? s.label}。${on ? '正在檢查連線。' : '設定已保留，隨時可以再啟用。'}已開著的 Claude Code 要重新啟動才會生效。`);
+  } catch (e) { pending.delete(s.id); render(); say(e.message, true); }
+};
+
+const remove = async (s, btn) => {
+  if (!confirm(`從使用者設定移除「${s.name}」？\n所有專案的 Claude Code 都不會再載入它。移除後可以按「復原」加回來。`)) return;
+  btn.disabled = true;
+  try {
+    const res = await call('/api/mcp/remove', { name: s.name });
+    data = res; render();
+    const undo = el('button', { textContent: '復原' });
+    undo.onclick = async () => { try { data = await call('/api/mcp/add', { name: s.name, config: res.config }); render(); say(`已加回 ${s.name}。`); } catch (e) { say(e.message, true); } };
+    say(`已移除 ${s.name}。`, false, undo);
+  } catch (e) { say(e.message, true); btn.disabled = false; }
+};
+
+$('check').prepend(ico('refresh'));
+$('add').prepend(ico('plus'));
+$('empty').append(ico('search'), el('div', { textContent: '沒有符合的伺服器。清除篩選或換個關鍵字。' }));
+for (const b of document.querySelectorAll('.toggle button')) {
+  b.append(ico(b.dataset.v));
+  b.onclick = () => { f.view = b.dataset.v; try { localStorage.setItem('mcp-view', f.view); } catch { /* 只在本次有效 */ } render(); };
+}
+try { f.view = localStorage.getItem('mcp-view') === 'list' ? 'list' : 'grid'; } catch { /* 用預設 */ }
+
+$('add').onclick = () => { $('a-err').textContent = ''; if (!$('a-json').value) $('a-json').value = JSON.stringify(TEMPLATES.stdio, null, 2); $('dlg').showModal(); };
+$('a-cancel').onclick = () => $('dlg').close();
+for (const b of document.querySelectorAll('.tpl button')) b.onclick = () => { $('a-json').value = JSON.stringify(TEMPLATES[b.dataset.t], null, 2); };
+$('a-form').onsubmit = async (e) => {
+  e.preventDefault();
+  let config;
+  try { config = JSON.parse($('a-json').value); } catch (err) { $('a-err').textContent = `JSON 格式有誤：${err.message}`; return; }
+  $('a-save').disabled = true;
+  try {
+    const name = $('a-name').value.trim();
+    data = await call('/api/mcp/add', { name, config });
+    $('dlg').close(); $('a-name').value = ''; $('a-json').value = '';
+    render();
+    const s = data.servers.find((x) => x.id === name);
+    if (s) say(`已新增 ${name}，目前狀態：${STATUS[s.status]}。`, s.status === 'fail');
+  } catch (err) { $('a-err').textContent = err.message; }
+  finally { $('a-save').disabled = false; }
+};
+
+$('check').onclick = () => check();
+gptPaint(); gptRefresh(); setInterval(gptRefresh, 30000);
+document.addEventListener('visibilitychange', gptRefresh);
+$('q').oninput = () => { f.q = $('q').value; render(); };
+// 自動檢查只在這個頁面開著時進行；選擇記在瀏覽器裡
+const setAuto = (min) => { clearInterval(timer); if (min) timer = setInterval(check, min * 60000); };
+$('auto').onchange = () => { try { localStorage.setItem('mcp-auto', $('auto').value); } catch { /* 無法儲存就只在本次有效 */ } setAuto(Number($('auto').value)); };
+try { $('auto').value = localStorage.getItem('mcp-auto') ?? '0'; } catch { /* 用預設 */ }
+setAuto(Number($('auto').value));
+setInterval(() => { if (!busy && $('msg').className !== 'err' && !$('msg').querySelector('button')) status(); }, 60000);
+
+try {
+  apply(await call('/api/mcp'));
+  connect();
+  if (!data.checking) { if (data.at) status(); else await check(); }
+} catch {
+  say('這一頁需要本機伺服器。請在 skills-galaxy 資料夾執行 node server.mjs，再開 http://127.0.0.1:8765/mcp.html', true);
+  for (const id of ['check', 'add', 'auto', 'q']) $(id).disabled = true;
+}
+</script>
+</body>
+</html>
