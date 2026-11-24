@@ -10,7 +10,7 @@
 ![Local only](https://img.shields.io/badge/network-127.0.0.1%20only-blueviolet)
 ![Lang](https://img.shields.io/badge/UI-繁體中文-red)
 
-[功能](#-功能總覽) · [快速開始](#-快速開始) · [三個頁面](#-三個頁面) · [架構](#-架構) · [安全設計](#-安全設計) · [API](docs/API.md) · [疑難排解](#-疑難排解)
+[功能](#-功能總覽) · [快速開始](#-快速開始) · [三個頁面](#-三個頁面) · [架構](#-架構) · [安全設計](#-安全設計) · [API](docs/API.md) · [更新紀錄](CHANGELOG.md) · [疑難排解](#-疑難排解)
 
 </div>
 
@@ -147,6 +147,7 @@ skills-galaxy/
 ├── descriptions.zh-TW.json # 技能描述繁中對照（可手動編輯或 AI 翻譯）
 ├── commands.zh-TW.json     # 指令說明繁中對照
 ├── start.bat               # Windows 一鍵啟動
+├── CHANGELOG.md            # 更新紀錄
 ├── docs/
 │   └── API.md              # HTTP API 參考
 │
